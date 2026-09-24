@@ -27,6 +27,7 @@ import * as XLSX from 'xlsx';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'questions' | 'presentation'>('import');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   
   // File & Sheet state
   const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
@@ -192,21 +193,23 @@ export function App() {
   }, [sheetData, mapping.categoryCol]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased overflow-x-hidden">
       
-      {/* Sidebar Navigation Menu */}
+      {/* Sidebar Navigation Drawer */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isDemoMode={isDemoMode}
         onLoadDemo={loadDemoData}
         recordCount={sheetData ? sheetData.rows.length : 0}
+        isOpenOnMobile={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
-      {/* Main Right Area */}
+      {/* Main Content View */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         
-        {/* Header Topbar */}
+        {/* Topbar Header */}
         <Header
           isDemoMode={isDemoMode}
           onLoadDemo={loadDemoData}
@@ -214,12 +217,13 @@ export function App() {
           recordCount={sheetData ? sheetData.rows.length : 0}
           currentFileName={currentFileName}
           currentSheetName={currentSheetName}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
         {/* Content Container */}
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
           
-          {/* Global Filter Bar (Shown in Dashboard, Questions, and Presentation tabs) */}
+          {/* Global Filter Bar */}
           {activeTab !== 'import' && sheetData && (
             <FilterBar
               filters={filters}
