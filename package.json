@@ -6,7 +6,8 @@
   "scripts": {
     "build:js": "esbuild src/main.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=empty --define:process.env.NODE_ENV=\\\"production\\\"",
     "build:css": "tailwindcss -i ./src/index.css -o ./dist/bundle.css --minify",
-    "build": "npm run build:js && npm run build:css",
+    "build:html": "node -e \"require('fs').copyFileSync('index.html', 'dist/index.html')\"",
+    "build": "npm run build:js && npm run build:css && npm run build:html",
     "start": "python3 -m http.server 3000 --directory dist",
     "dev": "vite"
   },
@@ -18,7 +19,7 @@
     "abnt",
     "boticario"
   ],
-  "author": "Antigravity Engineering",
+  "author": "Lucas Martins",
   "license": "ISC",
   "dependencies": {
     "canvas-confetti": "^1.9.4",
