@@ -1,9 +1,9 @@
 import React from 'react';
-import { FileSpreadsheet, LayoutDashboard, MessageSquareCode, Presentation, Layers, Sparkles, X, Sliders } from 'lucide-react';
+import { FileSpreadsheet, LayoutDashboard, MessageSquareCode, Presentation, Layers, Sparkles, X, Sliders, Settings } from 'lucide-react';
 
 interface SidebarProps {
-  activeTab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation';
-  setActiveTab: (tab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation') => void;
+  activeTab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation' | 'settings';
+  setActiveTab: (tab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation' | 'settings') => void;
   isDemoMode: boolean;
   onLoadDemo: () => void;
   recordCount: number;
@@ -26,9 +26,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'customization', label: 'Personalizar', icon: Sliders, description: 'Métricas, KPIs e Visões' },
     { id: 'questions', label: 'Perguntas à IA', icon: MessageSquareCode, description: 'Consultas à base' },
     { id: 'presentation', label: 'Apresentações', icon: Presentation, description: 'Relatório executivo' },
+    { id: 'settings', label: 'Configurações', icon: Settings, description: 'Governança e Temas' },
   ] as const;
 
-  const handleSelectTab = (tab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation') => {
+  const handleSelectTab = (tab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation' | 'settings') => {
     setActiveTab(tab);
     onCloseMobile();
   };

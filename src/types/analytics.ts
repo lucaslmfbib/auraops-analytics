@@ -256,6 +256,49 @@ export interface AISuggestion {
   text: string;
 }
 
+export type UserRole = 'admin' | 'editor' | 'viewer';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatarUrl?: string;
+}
+
+export interface ChartStyleConfig {
+  seriesColors: string[];
+  legendPosition: 'top' | 'bottom' | 'none';
+  showDataLabels: boolean;
+  showGridlines: boolean;
+}
+
+export interface OfficialKPIFormula {
+  kpiId: KPIId;
+  name: string;
+  formulaExpr: string;
+  requiredColumns: string[];
+  description: string;
+  isActive: boolean;
+}
+
+export interface OrgSettings {
+  id: string;
+  name: string;
+  brandTheme: PPTXTheme;
+  logoUrl?: string;
+  officialKPIFormulas: OfficialKPIFormula[];
+}
+
+export interface ProjectSettings {
+  id: string;
+  name: string;
+  projectTheme?: PPTXTheme;
+  chartStyles: ChartStyleConfig;
+  selectedKpis: KPIId[];
+  defaultFilterState?: FilterState;
+}
+
 export interface SlideItemConfig {
   id: string; // slide id
   title: string;
@@ -271,6 +314,7 @@ export interface SlideItemConfig {
   actionPlanItems?: ActionPlanItem[];
   chartConfig?: CustomChartConfig;
   useDashboardFilters?: boolean;
+  visualOverride?: Partial<PPTXTheme>;
 }
 
 export interface PresentationSnapshot {
@@ -281,4 +325,5 @@ export interface PresentationSnapshot {
   theme: PPTXTheme;
   slides: SlideItemConfig[];
 }
+
 

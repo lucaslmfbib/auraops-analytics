@@ -7,12 +7,17 @@ import { DashboardModule } from './components/DashboardModule';
 import { CustomizationPanel } from './components/CustomizationPanel';
 import { QuestionsModule } from './components/QuestionsModule';
 import { PresentationModule } from './components/PresentationModule';
+import { SettingsModule } from './components/SettingsModule';
 import { 
   ColumnMapping, 
   FilterState, 
   KPIId, 
   KPISelectionState, 
-  SheetData 
+  OrgSettings, 
+  ProjectSettings, 
+  SheetData, 
+  UserProfile, 
+  UserRole 
 } from './types/analytics';
 import { parseFile, extractSheetData } from './services/dataParser';
 import { createDefaultMapping } from './services/columnMapper';
@@ -26,6 +31,8 @@ import {
   generateOperationalAnswers 
 } from './services/analyticsEngine';
 import { getDemoSheetData } from './services/demoData';
+import { getActiveUserSession, setActiveUserRole } from './services/authService';
+import { DEFAULT_ORG_THEME, resolveEffectiveTheme } from './services/settingsCascadeEngine';
 import * as XLSX from 'xlsx';
 
 const DEFAULT_KPI_SELECTIONS: Record<KPIId, KPISelectionState> = {
@@ -41,9 +48,32 @@ const DEFAULT_KPI_SELECTIONS: Record<KPIId, KPISelectionState> = {
 };
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'customization' | 'questions' | 'presentation'>('import');
+  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'customization' | 'questions' | 'presentation' | 'settings'>('import');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   
+  // User Session & Role State
+  const [currentUser, setCurrentUser] = useState<UserProfile>(getActiveUserSession());
+
+  // Cascading Settings State
+  const [orgSettings, setOrgSettings] = useState<OrgSettings>({
+    id: 'org_auraops_default',
+    name: 'AuraOps Retail Corporation',
+    brandTheme: DEFAULT_ORG_THEME,
+    officialKPIFormulas: []
+  });
+
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings>({
+    id: 'prj_cosmeticos_sep',
+    name: 'Relatório Vendas Cosméticos',
+    chartStyles: {
+      seriesColors: ['#059669', '#10b981', '#34d399', '#0284c7', '#6366f1', '#8b5cf6', '#ec4899'],
+      legendPosition: 'bottom',
+      showDataLabels: true,
+      showGridlines: true
+    },
+    selectedKpis: Object.keys(DEFAULT_KPI_SELECTIONS) as KPIId[]
+  });
+
   // File & Sheet state
   const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [sheetNames, setSheetNames] = useState<string[]>([]);
@@ -81,6 +111,11 @@ export function App() {
     loadDemoData();
   }, []);
 
+  const handleRoleChange = (role: UserRole) => {
+    const updated = setActiveUserRole(role);
+    setCurrentUser(updated);
+  };
+
   const loadDemoData = () => {
     const { sheetData: demoData, mapping: demoMap } = getDemoSheetData();
     setSheetNames(['Vendas_Setembro_Demo']);
@@ -115,7 +150,6 @@ export function App() {
       setMapping(defaultMap);
       setIsDemoMode(false);
       
-      // Reset filters
       setFilters({
         startDate: '',
         endDate: '',
@@ -204,7 +238,7 @@ export function App() {
     return generateOperationalAnswers(kpis, stores, categories, products);
   }, [kpis, stores, categories, products]);
 
-  // Unique store and category lists for filters
+  // Available filters
   const availableStores = useMemo(() => {
     if (!sheetData || !mapping.storeCol) return [];
     const set = new Set<string>();
@@ -222,6 +256,11 @@ export function App() {
     });
     return Array.from(set).sort();
   }, [sheetData, mapping.categoryCol]);
+
+  // Effective Cascading Theme Resolution
+  const effectiveTheme = useMemo(() => {
+    return resolveEffectiveTheme(orgSettings.brandTheme, projectSettings.projectTheme);
+  }, [orgSettings.brandTheme, projectSettings.projectTheme]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased overflow-x-hidden">
@@ -255,7 +294,7 @@ export function App() {
         <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
           
           {/* Global Filter Bar */}
-          {activeTab !== 'import' && sheetData && (
+          {activeTab !== 'import' && activeTab !== 'settings' && sheetData && (
             <FilterBar
               filters={filters}
               onFilterChange={setFilters}
@@ -320,6 +359,18 @@ export function App() {
               dateRangeText={kpis.dateRangeText}
               activeDatasetName={currentFileName || 'Vendas Cosméticos'}
               kpiSelections={kpiSelections}
+            />
+          )}
+
+          {/* Tab 6: Configurações & Governança */}
+          {activeTab === 'settings' && (
+            <SettingsModule
+              currentUser={currentUser}
+              onUserRoleChange={handleRoleChange}
+              orgSettings={orgSettings}
+              onUpdateOrgSettings={setOrgSettings}
+              projectSettings={projectSettings}
+              onUpdateProjectSettings={setProjectSettings}
             />
           )}
 
