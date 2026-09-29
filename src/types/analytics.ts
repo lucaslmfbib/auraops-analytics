@@ -126,3 +126,82 @@ export interface OperationalAnswer {
   tableData?: Array<{ [key: string]: string | number }>;
   recommendation?: string;
 }
+
+// --------------------------------------------------
+// Customization, Widgets & PPTX Types
+// --------------------------------------------------
+
+export type KPIId = 
+  | 'total_sales'
+  | 'total_target'
+  | 'target_achievement'
+  | 'ticket_medio'
+  | 'gross_margin'
+  | 'total_profit'
+  | 'total_quantity'
+  | 'transaction_count'
+  | 'active_stores';
+
+export interface KPIDefinition {
+  id: KPIId;
+  name: string;
+  category: 'Vendas' | 'Metas' | 'Rentabilidade' | 'Volume';
+  formula: string;
+  unit: string;
+  requiredRoles: ColumnRole[];
+  description: string;
+}
+
+export interface KPISelectionState {
+  showInDashboard: boolean;
+  showInPresentation: boolean;
+}
+
+export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'pie' | 'table';
+
+export interface DashboardWidgetConfig {
+  id: string;
+  title: string;
+  type: 'kpi' | 'chart';
+  kpiId?: KPIId;
+  chartType?: ChartType;
+  dimensionRole?: ColumnRole;
+  metricRole?: ColumnRole;
+  visibleInDashboard: boolean;
+  visibleInPresentation: boolean;
+}
+
+export interface PPTXTheme {
+  id: string;
+  name: string;
+  isExternal: boolean;
+  primaryColor: string; // Hex e.g. #064e3b
+  secondaryColor: string; // Hex e.g. #10b981
+  backgroundColor: string; // Hex e.g. #0f172a
+  textColor: string; // Hex e.g. #ffffff
+  cardColor: string; // Hex e.g. #1e293b
+  headerFont: string;
+  bodyFont: string;
+  aspectRatio: '16:9' | '4:3';
+  adaptationNotes?: string[];
+}
+
+export interface SlideConfig {
+  id: string;
+  title: string;
+  layoutType: 'title' | 'kpis' | 'chart_and_insights' | 'ranking_table' | 'recommendations';
+  selectedKpiIds: KPIId[];
+  selectedWidgetIds: string[];
+  meetingObjective?: string;
+  customNotes?: string;
+  visible: boolean;
+}
+
+export interface PresentationSnapshot {
+  generatedAt: string;
+  activeDatasetName: string;
+  filterState: FilterState;
+  kpis: KPICalculation;
+  theme: PPTXTheme;
+  slides: SlideConfig[];
+}

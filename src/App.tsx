@@ -4,11 +4,14 @@ import { Header } from './components/Header';
 import { ImportModule } from './components/ImportModule';
 import { FilterBar } from './components/FilterBar';
 import { DashboardModule } from './components/DashboardModule';
+import { CustomizationPanel } from './components/CustomizationPanel';
 import { QuestionsModule } from './components/QuestionsModule';
 import { PresentationModule } from './components/PresentationModule';
 import { 
   ColumnMapping, 
   FilterState, 
+  KPIId, 
+  KPISelectionState, 
   SheetData 
 } from './types/analytics';
 import { parseFile, extractSheetData } from './services/dataParser';
@@ -25,8 +28,20 @@ import {
 import { getDemoSheetData } from './services/demoData';
 import * as XLSX from 'xlsx';
 
+const DEFAULT_KPI_SELECTIONS: Record<KPIId, KPISelectionState> = {
+  total_sales: { showInDashboard: true, showInPresentation: true },
+  total_target: { showInDashboard: true, showInPresentation: true },
+  target_achievement: { showInDashboard: true, showInPresentation: true },
+  ticket_medio: { showInDashboard: true, showInPresentation: true },
+  gross_margin: { showInDashboard: true, showInPresentation: true },
+  total_profit: { showInDashboard: true, showInPresentation: true },
+  total_quantity: { showInDashboard: true, showInPresentation: true },
+  transaction_count: { showInDashboard: true, showInPresentation: true },
+  active_stores: { showInDashboard: true, showInPresentation: true }
+};
+
 export function App() {
-  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'questions' | 'presentation'>('import');
+  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'customization' | 'questions' | 'presentation'>('import');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   
   // File & Sheet state
@@ -48,6 +63,9 @@ export function App() {
     metaGranularity: 'store_month'
   });
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+
+  // Customization Selections State
+  const [kpiSelections, setKpiSelections] = useState<Record<KPIId, KPISelectionState>>(DEFAULT_KPI_SELECTIONS);
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
@@ -140,6 +158,19 @@ export function App() {
     });
     setIsDemoMode(false);
     setActiveTab('import');
+  };
+
+  const handleCopyDashboardToPresentation = () => {
+    const updated = { ...kpiSelections };
+    Object.keys(updated).forEach(k => {
+      const id = k as KPIId;
+      updated[id] = {
+        ...updated[id],
+        showInPresentation: updated[id].showInDashboard
+      };
+    });
+    setKpiSelections(updated);
+    alert('Seleção do Dashboard copiada para as Apresentações com sucesso!');
   };
 
   // Filtered rows calculation
@@ -265,18 +296,30 @@ export function App() {
             />
           )}
 
-          {/* Tab 3: Perguntas à IA */}
+          {/* Tab 3: Personalizar */}
+          {activeTab === 'customization' && (
+            <CustomizationPanel
+              mapping={mapping}
+              kpiSelections={kpiSelections}
+              onUpdateSelections={setKpiSelections}
+              onCopyDashboardToPresentation={handleCopyDashboardToPresentation}
+            />
+          )}
+
+          {/* Tab 4: Perguntas à IA */}
           {activeTab === 'questions' && (
             <QuestionsModule answers={answers} />
           )}
 
-          {/* Tab 4: Apresentações */}
+          {/* Tab 5: Apresentações */}
           {activeTab === 'presentation' && (
             <PresentationModule
               kpis={kpis}
               stores={stores}
               categories={categories}
               dateRangeText={kpis.dateRangeText}
+              activeDatasetName={currentFileName || 'Vendas Cosméticos'}
+              kpiSelections={kpiSelections}
             />
           )}
 

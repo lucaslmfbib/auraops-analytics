@@ -1,9 +1,9 @@
 import React from 'react';
-import { FileSpreadsheet, LayoutDashboard, MessageSquareCode, Presentation, Layers, Sparkles, X } from 'lucide-react';
+import { FileSpreadsheet, LayoutDashboard, MessageSquareCode, Presentation, Layers, Sparkles, X, Sliders } from 'lucide-react';
 
 interface SidebarProps {
-  activeTab: 'import' | 'dashboard' | 'questions' | 'presentation';
-  setActiveTab: (tab: 'import' | 'dashboard' | 'questions' | 'presentation') => void;
+  activeTab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation';
+  setActiveTab: (tab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation') => void;
   isDemoMode: boolean;
   onLoadDemo: () => void;
   recordCount: number;
@@ -23,11 +23,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = [
     { id: 'import', label: 'Dados', icon: FileSpreadsheet, description: 'Importação e conferência' },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Indicadores operacionais' },
+    { id: 'customization', label: 'Personalizar', icon: Sliders, description: 'Métricas, KPIs e Visões' },
     { id: 'questions', label: 'Perguntas à IA', icon: MessageSquareCode, description: 'Consultas à base' },
     { id: 'presentation', label: 'Apresentações', icon: Presentation, description: 'Relatório executivo' },
   ] as const;
 
-  const handleSelectTab = (tab: 'import' | 'dashboard' | 'questions' | 'presentation') => {
+  const handleSelectTab = (tab: 'import' | 'dashboard' | 'customization' | 'questions' | 'presentation') => {
     setActiveTab(tab);
     onCloseMobile();
   };
@@ -139,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onLoadDemo();
                   onCloseMobile();
                 }}
-                className="w-full text-center bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-medium py-1.5 rounded transition-colors"
+                className="w-full text-center bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-medium py-1 rounded transition-colors"
               >
                 Usar dados de exemplo
               </button>
