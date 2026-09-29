@@ -8,8 +8,10 @@ import { CustomizationPanel } from './components/CustomizationPanel';
 import { QuestionsModule } from './components/QuestionsModule';
 import { PresentationModule } from './components/PresentationModule';
 import { SettingsModule } from './components/SettingsModule';
+import { ChartBuilderModal } from './components/ChartBuilderModal';
 import { 
   ColumnMapping, 
+  CustomChartConfig, 
   FilterState, 
   KPIId, 
   KPISelectionState, 
@@ -66,13 +68,18 @@ export function App() {
     id: 'prj_cosmeticos_sep',
     name: 'Relatório Vendas Cosméticos',
     chartStyles: {
-      seriesColors: ['#059669', '#10b981', '#34d399', '#0284c7', '#6366f1', '#8b5cf6', '#ec4899'],
+      seriesColors: ['#011E38', '#264FEC', '#FFBC82', '#059669', '#6366f1', '#8b5cf6', '#ec4899'],
       legendPosition: 'bottom',
       showDataLabels: true,
       showGridlines: true
     },
     selectedKpis: Object.keys(DEFAULT_KPI_SELECTIONS) as KPIId[]
   });
+
+  // Custom Chart Configurator Modal State
+  const [showChartModal, setShowChartModal] = useState<boolean>(false);
+  const [editingChartConfig, setEditingChartConfig] = useState<CustomChartConfig | null>(null);
+  const [customChartsList, setCustomChartsList] = useState<CustomChartConfig[]>([]);
 
   // File & Sheet state
   const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
@@ -114,6 +121,34 @@ export function App() {
   const handleRoleChange = (role: UserRole) => {
     const updated = setActiveUserRole(role);
     setCurrentUser(updated);
+  };
+
+  const handleOpenChartConfigurator = (chart?: CustomChartConfig) => {
+    setEditingChartConfig(chart || null);
+    setShowChartModal(true);
+  };
+
+  const handleSaveChartFromModal = (chart: CustomChartConfig, scopeAction: string = 'current') => {
+    if (scopeAction === 'style_all') {
+      setCustomChartsList(prev => prev.map(c => ({
+        ...c,
+        primaryColor: chart.primaryColor,
+        secondaryColor: chart.secondaryColor,
+        accentColor: chart.accentColor,
+        cardBgColor: chart.cardBgColor,
+        fontFamily: chart.fontFamily
+      })));
+    } else {
+      setCustomChartsList(prev => {
+        const idx = prev.findIndex(c => c.id === chart.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = chart;
+          return next;
+        }
+        return [...prev, chart];
+      });
+    }
   };
 
   const loadDemoData = () => {
@@ -257,11 +292,6 @@ export function App() {
     return Array.from(set).sort();
   }, [sheetData, mapping.categoryCol]);
 
-  // Effective Cascading Theme Resolution
-  const effectiveTheme = useMemo(() => {
-    return resolveEffectiveTheme(orgSettings.brandTheme, projectSettings.projectTheme);
-  }, [orgSettings.brandTheme, projectSettings.projectTheme]);
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased overflow-x-hidden">
       
@@ -332,6 +362,8 @@ export function App() {
               products={products}
               timeline={timeline}
               dateRangeText={kpis.dateRangeText}
+              customCharts={customChartsList}
+              onOpenChartConfigurator={handleOpenChartConfigurator}
             />
           )}
 
@@ -359,6 +391,8 @@ export function App() {
               dateRangeText={kpis.dateRangeText}
               activeDatasetName={currentFileName || 'Vendas Cosméticos'}
               kpiSelections={kpiSelections}
+              customCharts={customChartsList}
+              onOpenChartConfigurator={handleOpenChartConfigurator}
             />
           )}
 
@@ -377,6 +411,16 @@ export function App() {
         </main>
 
       </div>
+
+      {/* CHART BUILDER MODAL */}
+      {showChartModal && (
+        <ChartBuilderModal
+          sheetData={sheetData}
+          existingChart={editingChartConfig}
+          onSaveChart={handleSaveChartFromModal}
+          onClose={() => setShowChartModal(false)}
+        />
+      )}
 
     </div>
   );

@@ -152,7 +152,7 @@ export interface CustomCalculatedMetric {
   unit: string;
 }
 
-export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'table';
+export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'scatter' | 'table';
 
 export interface CustomChartConfig {
   id: string;
@@ -165,7 +165,35 @@ export interface CustomChartConfig {
   limitTopN: number; // 0 for all, or 5, 10
   showInDashboard: boolean;
   showInPresentation: boolean;
+  
+  // Tab 1: Data extensions
+  compareWithTarget?: boolean;
+  compareWithPrevious?: boolean;
+  filterStateOverride?: FilterState;
+
+  // Tab 2: Chart options
+  orientation?: 'vertical' | 'horizontal';
+  showValues?: boolean;
+  showAxes?: boolean;
+  showGridlines?: boolean;
+  showLegend?: boolean;
+  seriesCustomNames?: Record<string, string>;
+  isAutomatic?: boolean;
+  autoJustification?: string;
+
+  // Tab 3: Appearance options (Boticário identity defaults)
+  paletteId?: string; // 'boticario' | 'emerald' | 'indigo' | 'rose' | 'custom'
+  primaryColor?: string; // e.g., #011E38 (Dark Blue)
+  secondaryColor?: string; // e.g., #264FEC (Blue)
+  accentColor?: string; // e.g., #FFBC82 (Salmon)
+  cardBgColor?: string; // e.g., #F5F1EB (Off-White)
+  fontFamily?: string; // 'IBM Plex Sans' | 'Inter' | 'Arial'
+  fontSize?: 'sm' | 'md' | 'lg';
+  strokeWidth?: number;
+  markerSize?: number;
+  categoryColorsMap?: Record<string, string>; // Category/series name -> HEX color mapping
 }
+
 
 export type KPIId = 
   | 'total_sales'

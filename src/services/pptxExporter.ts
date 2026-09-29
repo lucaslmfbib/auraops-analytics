@@ -20,16 +20,16 @@ export async function generatePPTXFile(
   const pptx = new pptxgen();
 
   const theme: PPTXTheme = snapshot.theme || {
-    id: 'default',
-    name: 'Verde Varejo Executivo',
+    id: 'boticario_default',
+    name: 'Boticário Institucional',
     isExternal: false,
-    primaryColor: '#064e3b',
-    secondaryColor: '#10b981',
-    backgroundColor: '#0f172a',
-    textColor: '#ffffff',
-    cardColor: '#1e293b',
-    headerFont: 'Arial',
-    bodyFont: 'Arial',
+    primaryColor: '#011E38',
+    secondaryColor: '#264FEC',
+    backgroundColor: '#011E38',
+    textColor: '#F5F1EB',
+    cardColor: '#0A2A4A',
+    headerFont: 'IBM Plex Sans',
+    bodyFont: 'IBM Plex Sans',
     aspectRatio: '16:9'
   };
 

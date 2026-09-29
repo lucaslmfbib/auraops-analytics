@@ -7,7 +7,9 @@ import {
   Store, 
   Award, 
   AlertCircle,
-  BarChart3
+  BarChart3,
+  Sliders,
+  Plus
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -23,12 +25,14 @@ import {
 } from 'recharts';
 import { 
   CategoryPerformance, 
+  CustomChartConfig,
   KPICalculation, 
   ProductPerformance, 
   StorePerformance, 
   TimepointSales 
 } from '../types/analytics';
 import { formatBRCurrency, formatBRNumber } from '../services/dataParser';
+
 
 interface DashboardModuleProps {
   kpis: KPICalculation;
@@ -37,9 +41,11 @@ interface DashboardModuleProps {
   products: ProductPerformance[];
   timeline: TimepointSales[];
   dateRangeText: string;
+  customCharts?: CustomChartConfig[];
+  onOpenChartConfigurator?: (chart?: CustomChartConfig) => void;
 }
 
-const BRAND_COLORS = ['#059669', '#10b981', '#34d399', '#0284c7', '#6366f1', '#8b5cf6', '#ec4899'];
+const BRAND_COLORS = ['#011E38', '#264FEC', '#FFBC82', '#059669', '#6366f1', '#8b5cf6', '#ec4899'];
 
 export const DashboardModule: React.FC<DashboardModuleProps> = ({
   kpis,
@@ -47,7 +53,9 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   categories,
   products,
   timeline,
-  dateRangeText
+  dateRangeText,
+  customCharts = [],
+  onOpenChartConfigurator
 }) => {
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in pb-12">
@@ -180,6 +188,15 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               </h3>
               <p className="text-[11px] text-slate-500">Faturamento acumulado ({dateRangeText})</p>
             </div>
+            {onOpenChartConfigurator && (
+              <button
+                onClick={() => onOpenChartConfigurator()}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center space-x-1 transition-colors"
+              >
+                <Sliders className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Personalizar gráfico</span>
+              </button>
+            )}
           </div>
 
           {timeline.length > 0 ? (
@@ -221,6 +238,15 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               </h3>
               <p className="text-[11px] text-slate-500">Faturamento total por unidade</p>
             </div>
+            {onOpenChartConfigurator && (
+              <button
+                onClick={() => onOpenChartConfigurator()}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center space-x-1 transition-colors"
+              >
+                <Sliders className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Personalizar</span>
+              </button>
+            )}
           </div>
 
           {stores.length > 0 ? (

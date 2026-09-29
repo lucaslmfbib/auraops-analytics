@@ -2,15 +2,15 @@ import { PPTXTheme, ProjectSettings, SlideItemConfig } from '../types/analytics'
 
 export const DEFAULT_ORG_THEME: PPTXTheme = {
   id: 'org_brand_default',
-  name: 'Verde Varejo Institucional (Padrão da Organização)',
+  name: 'Boticário Institucional (Padrão da Organização)',
   isExternal: false,
-  primaryColor: '#064e3b',
-  secondaryColor: '#10b981',
-  backgroundColor: '#0f172a',
-  textColor: '#ffffff',
-  cardColor: '#1e293b',
-  headerFont: 'Arial',
-  bodyFont: 'Arial',
+  primaryColor: '#011E38', // Dark Blue
+  secondaryColor: '#264FEC', // Blue Accent
+  backgroundColor: '#011E38', // Dark Blue bg
+  textColor: '#F5F1EB', // Off-White text
+  cardColor: '#0A2A4A', // Deep Blue Card
+  headerFont: 'IBM Plex Sans',
+  bodyFont: 'IBM Plex Sans',
   aspectRatio: '16:9'
 };
 

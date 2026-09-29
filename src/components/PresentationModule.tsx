@@ -52,6 +52,7 @@ interface PresentationModuleProps {
   activeDatasetName: string;
   kpiSelections: Record<KPIId, KPISelectionState>;
   customCharts?: CustomChartConfig[];
+  onOpenChartConfigurator?: (chart?: CustomChartConfig) => void;
 }
 
 const BUILTIN_THEMES: PPTXTheme[] = [
@@ -546,6 +547,11 @@ export const PresentationModule: React.FC<PresentationModuleProps> = ({
                 <span className="text-xs font-bold uppercase tracking-widest" style={{ color: selectedTheme.secondaryColor }}>
                   AuraOps Analytics
                 </span>
+                {activeSlide.useDashboardFilters === false && (
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">
+                    Filtros Customizados do Slide
+                  </span>
+                )}
               </div>
               <span className="text-xs opacity-75">{dateRangeText}</span>
             </div>
