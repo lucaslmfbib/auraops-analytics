@@ -7,7 +7,9 @@ import {
   ProductPerformance, 
   RawRow, 
   StorePerformance, 
-  TimepointSales 
+  TimepointSales,
+  CustomChartConfig,
+  MetricAggregation
 } from '../types/analytics';
 import { formatBRCurrency, formatBRDate, formatBRNumber, parseBrazilianNumber, parseDateValue } from './dataParser';
 
@@ -499,3 +501,110 @@ export function generateOperationalAnswers(
 
   return answers;
 }
+
+export interface CustomChartDataPoint {
+  name: string;
+  value: number;
+}
+
+export function calculateCustomChartData(
+  rows: RawRow[],
+  config: CustomChartConfig
+): CustomChartDataPoint[] {
+  const { dimensionHeader, metricHeader, aggregation, sortOrder, limitTopN } = config;
+
+  if (!dimensionHeader || !rows.length) return [];
+
+  const groupMap = new Map<string, { values: number[]; distinctSet: Set<string> }>();
+
+  rows.forEach(r => {
+    const dimRaw = r[dimensionHeader];
+    const dimVal = String(dimRaw !== null && dimRaw !== undefined ? dimRaw : 'Outros').trim() || 'Outros';
+
+    if (!groupMap.has(dimVal)) {
+      groupMap.set(dimVal, { values: [], distinctSet: new Set() });
+    }
+    const group = groupMap.get(dimVal)!;
+
+    if (metricHeader && r[metricHeader] !== undefined) {
+      const rawVal = r[metricHeader];
+      const parsed = parseBrazilianNumber(rawVal);
+      if (parsed !== null) {
+        group.values.push(parsed);
+      }
+      group.distinctSet.add(String(rawVal));
+    } else {
+      group.values.push(1);
+      group.distinctSet.add(String(r[dimensionHeader]));
+    }
+  });
+
+  const result: CustomChartDataPoint[] = [];
+
+  groupMap.forEach((group, dimName) => {
+    let finalVal = 0;
+
+    if (aggregation === 'sum') {
+      finalVal = group.values.reduce((acc, v) => acc + v, 0);
+    } else if (aggregation === 'avg') {
+      finalVal = group.values.length > 0 ? group.values.reduce((acc, v) => acc + v, 0) / group.values.length : 0;
+    } else if (aggregation === 'count') {
+      finalVal = group.values.length;
+    } else if (aggregation === 'count_distinct') {
+      finalVal = group.distinctSet.size;
+    }
+
+    result.push({
+      name: dimName,
+      value: Math.round(finalVal * 100) / 100
+    });
+  });
+
+  if (sortOrder === 'desc') {
+    result.sort((a, b) => b.value - a.value);
+  } else if (sortOrder === 'asc') {
+    result.sort((a, b) => a.value - b.value);
+  } else if (sortOrder === 'alpha') {
+    result.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  }
+
+  if (limitTopN > 0 && result.length > limitTopN) {
+    return result.slice(0, limitTopN);
+  }
+
+  return result;
+}
+
+export function calculateCustomMetricValue(
+  rows: RawRow[],
+  columnHeader: string,
+  aggregation: MetricAggregation
+): number {
+  if (!rows.length || !columnHeader) return 0;
+  const values: number[] = [];
+  const distinctSet = new Set<string>();
+
+  rows.forEach(r => {
+    const val = r[columnHeader];
+    if (val !== null && val !== undefined) {
+      distinctSet.add(String(val));
+      const parsed = parseBrazilianNumber(val);
+      if (parsed !== null) {
+        values.push(parsed);
+      }
+    }
+  });
+
+  if (aggregation === 'sum') {
+    return values.reduce((acc, v) => acc + v, 0);
+  } else if (aggregation === 'avg') {
+    return values.length > 0 ? values.reduce((acc, v) => acc + v, 0) / values.length : 0;
+  } else if (aggregation === 'count') {
+    return values.length;
+  } else if (aggregation === 'count_distinct') {
+    return distinctSet.size;
+  }
+
+  return 0;
+}
+

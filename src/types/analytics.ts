@@ -128,8 +128,44 @@ export interface OperationalAnswer {
 }
 
 // --------------------------------------------------
-// Customization, Widgets & PPTX Types
+// Custom Metrics & Custom Charts Models
 // --------------------------------------------------
+
+export type MetricAggregation = 'sum' | 'avg' | 'count' | 'count_distinct';
+
+export interface CustomMetricConfig {
+  id: string;
+  name: string;
+  columnHeader: string;
+  aggregation: MetricAggregation;
+  showInDashboard: boolean;
+  showInPresentation: boolean;
+}
+
+export interface CustomCalculatedMetric {
+  id: string;
+  name: string;
+  formulaExpr: string; // e.g., "(Sales - Cost) / Sales"
+  columnA: string;
+  columnB: string;
+  operator: '-' | '/' | '*' | '+';
+  unit: string;
+}
+
+export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'table';
+
+export interface CustomChartConfig {
+  id: string;
+  title: string;
+  chartType: ChartType;
+  dimensionHeader: string;
+  metricHeader: string;
+  aggregation: MetricAggregation;
+  sortOrder: 'desc' | 'asc' | 'alpha';
+  limitTopN: number; // 0 for all, or 5, 10
+  showInDashboard: boolean;
+  showInPresentation: boolean;
+}
 
 export type KPIId = 
   | 'total_sales'
@@ -157,19 +193,9 @@ export interface KPISelectionState {
   showInPresentation: boolean;
 }
 
-export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'pie' | 'table';
-
-export interface DashboardWidgetConfig {
-  id: string;
-  title: string;
-  type: 'kpi' | 'chart';
-  kpiId?: KPIId;
-  chartType?: ChartType;
-  dimensionRole?: ColumnRole;
-  metricRole?: ColumnRole;
-  visibleInDashboard: boolean;
-  visibleInPresentation: boolean;
-}
+// --------------------------------------------------
+// PPTX Template & Flexible Slide Models
+// --------------------------------------------------
 
 export interface PPTXTheme {
   id: string;
@@ -183,17 +209,28 @@ export interface PPTXTheme {
   headerFont: string;
   bodyFont: string;
   aspectRatio: '16:9' | '4:3';
+  extractedImages?: string[]; // base64 or data URLs of logos/backgrounds
+  detectedLayouts?: string[];
   adaptationNotes?: string[];
 }
 
-export interface SlideConfig {
-  id: string;
+export type SlideLayoutId = 
+  | 'cover'
+  | 'executive_kpis'
+  | 'chart_and_insights'
+  | 'ranking_table'
+  | 'recommendations'
+  | 'custom_content';
+
+export interface SlideItemConfig {
+  id: string; // slide id
   title: string;
-  layoutType: 'title' | 'kpis' | 'chart_and_insights' | 'ranking_table' | 'recommendations';
-  selectedKpiIds: KPIId[];
-  selectedWidgetIds: string[];
-  meetingObjective?: string;
-  customNotes?: string;
+  description: string;
+  layoutId: SlideLayoutId;
+  selectedKpis: KPIId[];
+  selectedChartIds: string[];
+  customText?: string;
+  meetingContext?: string;
   visible: boolean;
 }
 
@@ -203,5 +240,5 @@ export interface PresentationSnapshot {
   filterState: FilterState;
   kpis: KPICalculation;
   theme: PPTXTheme;
-  slides: SlideConfig[];
+  slides: SlideItemConfig[];
 }
