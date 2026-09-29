@@ -10,7 +10,9 @@ import { PresentationModule } from './components/PresentationModule';
 import { SettingsModule } from './components/SettingsModule';
 import { ChartBuilderModal } from './components/ChartBuilderModal';
 import { ChartEditorDrawer } from './components/ChartEditorDrawer';
+import { AnalysisCatalogModal } from './components/AnalysisCatalogModal';
 import { 
+  AnalysisQuestionItem,
   ColumnMapping, 
   CustomCalculatedMetric,
   CustomChartConfig, 
@@ -152,6 +154,76 @@ export function App() {
         return [...prev, chart];
       });
     }
+  };
+
+  // Analysis Catalog Modal State
+  const [showAnalysisCatalog, setShowAnalysisCatalog] = useState<boolean>(false);
+
+  const handleSelectAnalysisFromCatalog = (question: AnalysisQuestionItem) => {
+    let dimCol = sheetData?.headers[0] || 'Loja';
+    let metCol = sheetData?.headers[1] || 'Vendas';
+
+    if (question.defaultDimension === 'store' && mapping.storeCol) dimCol = mapping.storeCol;
+    if (question.defaultDimension === 'category' && (mapping.categoryCol || mapping.productCol)) dimCol = (mapping.categoryCol || mapping.productCol)!;
+    if (question.defaultDimension === 'date' && mapping.dateCol) dimCol = mapping.dateCol;
+    if (question.defaultMetric === 'sales' && mapping.salesCol) metCol = mapping.salesCol;
+
+    const newChart: CustomChartConfig = {
+      id: `chart_${Date.now()}`,
+      title: question.defaultTitle,
+      chartType: question.defaultChartType,
+      dimensionHeader: dimCol,
+      metricHeader: metCol,
+      aggregation: 'sum',
+      sortOrder: 'desc',
+      limitTopN: 7,
+      showInDashboard: true,
+      showInPresentation: true,
+      primaryColor: '#011E38',
+      secondaryColor: '#264FEC',
+      accentColor: '#FFBC82',
+      cardBgColor: '#F5F1EB',
+      fontFamily: 'IBM Plex Sans',
+      showLegend: true,
+      showValues: true,
+      showGridlines: true,
+      numberFormat: 'currency',
+      decimalPlaces: 2
+    };
+
+    setCustomChartsList(prev => [...prev, newChart]);
+    setShowAnalysisCatalog(false);
+  };
+
+  const handleDuplicateChart = (chart: CustomChartConfig) => {
+    const clone: CustomChartConfig = {
+      ...chart,
+      id: `chart_${Date.now()}`,
+      title: `${chart.title} (Cópia)`
+    };
+    setCustomChartsList(prev => [...prev, clone]);
+  };
+
+  const handleDeleteChart = (id: string) => {
+    setCustomChartsList(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleReorderChart = (id: string, direction: 'up' | 'down') => {
+    setCustomChartsList(prev => {
+      const idx = prev.findIndex(c => c.id === id);
+      if (idx < 0) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const temp = next[idx];
+      next[idx] = next[targetIdx];
+      next[targetIdx] = temp;
+      return next;
+    });
+  };
+
+  const handleTogglePresentationChart = (id: string) => {
+    setCustomChartsList(prev => prev.map(c => c.id === id ? { ...c, showInPresentation: !c.showInPresentation } : c));
   };
 
   const loadDemoData = () => {
@@ -367,8 +439,15 @@ export function App() {
               products={products}
               timeline={timeline}
               dateRangeText={kpis.dateRangeText}
+              sheetData={sheetData}
+              mapping={mapping}
               customCharts={customChartsList}
               onOpenChartConfigurator={handleOpenChartConfigurator}
+              onOpenAnalysisCatalog={() => setShowAnalysisCatalog(true)}
+              onDuplicateChart={handleDuplicateChart}
+              onDeleteChart={handleDeleteChart}
+              onReorderChart={handleReorderChart}
+              onTogglePresentationChart={handleTogglePresentationChart}
             />
           )}
 
@@ -432,6 +511,15 @@ export function App() {
         </main>
 
       </div>
+
+      {/* ANALYSIS CATALOG MODAL */}
+      {showAnalysisCatalog && (
+        <AnalysisCatalogModal
+          mapping={mapping}
+          onSelectAnalysis={handleSelectAnalysisFromCatalog}
+          onClose={() => setShowAnalysisCatalog(false)}
+        />
+      )}
 
       {/* CHART EDITOR DRAWER */}
       {showChartModal && (

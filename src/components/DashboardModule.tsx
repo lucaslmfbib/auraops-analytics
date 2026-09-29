@@ -15,7 +15,14 @@ import {
   Edit3,
   CheckCircle2,
   AlertTriangle,
-  Info
+  Info,
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  CopyPlus,
+  CheckSquare,
+  Square,
+  Sparkles
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -30,20 +37,21 @@ import {
   Cell,
   LineChart,
   Line,
-  PieChart,
-  Pie,
   Legend
 } from 'recharts';
 import { 
   CategoryPerformance, 
+  ColumnMapping, 
   CustomChartConfig,
   KPICalculation, 
   ProductPerformance, 
+  SheetData, 
   StorePerformance, 
   TimepointSales 
 } from '../types/analytics';
 import { formatBRCurrency, formatBRNumber } from '../services/dataParser';
 import { copyChartToClipboard, downloadChartAsPNG } from '../services/chartImageExporter';
+import { DynamicChartRenderer, formatAxisTickValue } from './DynamicChartRenderer';
 
 interface DashboardModuleProps {
   kpis: KPICalculation;
@@ -52,8 +60,15 @@ interface DashboardModuleProps {
   products: ProductPerformance[];
   timeline: TimepointSales[];
   dateRangeText: string;
+  sheetData: SheetData | null;
+  mapping: ColumnMapping;
   customCharts?: CustomChartConfig[];
   onOpenChartConfigurator?: (chart?: CustomChartConfig) => void;
+  onOpenAnalysisCatalog?: () => void;
+  onDuplicateChart?: (chart: CustomChartConfig) => void;
+  onDeleteChart?: (id: string) => void;
+  onReorderChart?: (id: string, direction: 'up' | 'down') => void;
+  onTogglePresentationChart?: (id: string) => void;
 }
 
 const BRAND_COLORS = ['#011E38', '#264FEC', '#FFBC82', '#059669', '#6366f1', '#8b5cf6', '#ec4899'];
@@ -65,34 +80,43 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   products,
   timeline,
   dateRangeText,
+  sheetData,
+  mapping,
   customCharts = [],
-  onOpenChartConfigurator
+  onOpenChartConfigurator,
+  onOpenAnalysisCatalog,
+  onDuplicateChart,
+  onDeleteChart,
+  onReorderChart,
+  onTogglePresentationChart
 }) => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'error' } | null>(null);
 
   const timelineCardRef = useRef<HTMLDivElement>(null);
   const storeCardRef = useRef<HTMLDivElement>(null);
   const categoryCardRef = useRef<HTMLDivElement>(null);
+  const customChartRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const triggerToast = (message: string, type: 'success' | 'warning' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4500);
   };
 
-  const handleCopyChart = async (ref: React.RefObject<HTMLDivElement | null>, title: string, unitText: string = 'R$') => {
-    if (!ref.current) return;
-    const res = await copyChartToClipboard(ref.current, title, {
+  const handleCopyChart = async (ref: React.RefObject<HTMLDivElement | null> | HTMLDivElement | null, title: string, unitText: string = 'R$') => {
+    const targetElem = ref && 'current' in ref ? ref.current : ref;
+    if (!targetElem) return;
+    const res = await copyChartToClipboard(targetElem, title, {
       periodText: dateRangeText,
       unitText,
       activeFiltersText: 'Filtros padrão do dashboard'
     });
 
     if (res.success) {
-      triggerToast('Gráfico copiado para a área de transferência!', 'success');
+      triggerToast('Gráfico copiado para a área de transferência com sucesso!', 'success');
     } else {
       triggerToast(res.message, 'warning');
-      if (res.blob && ref.current) {
-        await downloadChartAsPNG(ref.current, title, {
+      if (res.blob && targetElem) {
+        await downloadChartAsPNG(targetElem, title, {
           periodText: dateRangeText,
           unitText,
           activeFiltersText: 'Filtros padrão do dashboard'
@@ -101,10 +125,11 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
     }
   };
 
-  const handleDownloadChart = async (ref: React.RefObject<HTMLDivElement | null>, title: string, unitText: string = 'R$') => {
-    if (!ref.current) return;
+  const handleDownloadChart = async (ref: React.RefObject<HTMLDivElement | null> | HTMLDivElement | null, title: string, unitText: string = 'R$') => {
+    const targetElem = ref && 'current' in ref ? ref.current : ref;
+    if (!targetElem) return;
     try {
-      await downloadChartAsPNG(ref.current, title, {
+      await downloadChartAsPNG(targetElem, title, {
         periodText: dateRangeText,
         unitText,
         activeFiltersText: 'Filtros padrão do dashboard'
@@ -114,8 +139,9 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       triggerToast(`Erro ao exportar PNG: ${err?.message || 'Falha.'}`, 'error');
     }
   };
+
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-12 relative">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-12 relative max-w-7xl mx-auto">
 
       {/* Floating Toast Notification */}
       {toast && (
@@ -133,6 +159,41 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
       )}
 
+      {/* Action Header: Adicionar Análise */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-slate-900 text-white rounded-2xl shadow-lg border border-slate-800">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 text-white">
+            <BarChart3 className="w-5 h-5 text-emerald-400 shrink-0" />
+            Painel Executivo de Analytics
+          </h2>
+          <p className="text-xs text-slate-300">
+            {customCharts.length} análises ativas | Período: {dateRangeText}
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {onOpenAnalysisCatalog && (
+            <button
+              onClick={onOpenAnalysisCatalog}
+              className="px-4 py-2 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-md transition-all flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4 text-slate-950" />
+              <span>Adicionar Análise</span>
+            </button>
+          )}
+
+          {onOpenChartConfigurator && (
+            <button
+              onClick={() => onOpenChartConfigurator()}
+              className="px-3.5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all flex items-center space-x-1.5"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Criar Gráfico Livre</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
@@ -149,7 +210,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               {formatBRCurrency(kpis.totalSales)}
             </span>
             <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
-              <span>{kpis.recordCount} registros</span>
+              <span>{kpis.recordCount} registros na base</span>
             </div>
           </div>
         </div>
@@ -163,31 +224,17 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
-            {kpis.hasTargetData && kpis.targetAchievementPct !== null ? (
+            {kpis.hasTargetData ? (
               <>
-                <div className="flex items-baseline justify-between gap-1 flex-wrap">
-                  <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                    {kpis.targetAchievementPct.toFixed(1)}%
-                  </span>
-                  <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${
-                    kpis.targetAchievementPct >= 100 
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : kpis.targetAchievementPct >= 85
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
-                  }`}>
-                    {kpis.targetAchievementPct >= 100 ? 'Meta Superada' : 'Abaixo da Meta'}
-                  </span>
-                </div>
+                <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  {kpis.targetAchievementPct !== null ? `${kpis.targetAchievementPct.toFixed(1)}%` : 'N/A'}
+                </span>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Meta: {formatBRCurrency(kpis.totalTarget)}
+                  Meta mensal: <strong>{formatBRCurrency(kpis.totalTarget)}</strong>
                 </div>
               </>
             ) : (
-              <div className="py-0.5">
-                <span className="text-xs sm:text-sm font-semibold text-slate-400 italic">Meta não mapeada</span>
-                <p className="text-[10px] text-slate-400 mt-0.5">Mapeie a coluna de metas na aba Dados.</p>
-              </div>
+              <span className="text-xs text-slate-400 italic">Sem coluna de meta</span>
             )}
           </div>
         </div>
@@ -201,54 +248,48 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
-            {kpis.hasTicketData && kpis.ticketMedio !== null ? (
+            {kpis.hasTicketData ? (
               <>
                 <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                  {formatBRCurrency(kpis.ticketMedio)}
+                  {kpis.ticketMedio !== null ? formatBRCurrency(kpis.ticketMedio) : 'N/A'}
                 </span>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Base: {formatBRNumber(kpis.totalTransactions)} pedidos/cupons
+                  {mapping.transactionCol ? `${kpis.totalTransactions} cupons distintos` : `${kpis.totalTransactions} linhas de venda`}
                 </div>
               </>
             ) : (
-              <div className="py-0.5">
-                <span className="text-xs sm:text-sm font-semibold text-slate-400 italic">Ticket Indisponível</span>
-                <p className="text-[10px] text-slate-400 mt-0.5">Requer coluna de ID Transação.</p>
-              </div>
+              <span className="text-xs text-slate-400 italic">Sem dados de ticket</span>
             )}
           </div>
         </div>
 
-        {/* KPI 4: Margem Bruta */}
-        <div className="executive-card p-4 sm:p-5 border-l-4 border-l-indigo-600">
+        {/* KPI 4: Margem Consolidada */}
+        <div className="executive-card p-4 sm:p-5 border-l-4 border-l-amber-600">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Margem Bruta</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-indigo-50 text-indigo-600">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Margem Consolidada</span>
+            <div className="p-1.5 sm:p-2 rounded-lg bg-amber-50 text-amber-600">
               <Percent className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
-            {kpis.hasMarginData && kpis.grossMarginPct !== null ? (
+            {kpis.hasMarginData ? (
               <>
                 <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                  {kpis.grossMarginPct.toFixed(1)}%
+                  {kpis.grossMarginPct !== null ? `${kpis.grossMarginPct.toFixed(1)}%` : 'N/A'}
                 </span>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Lucro Bruto: {formatBRCurrency(kpis.totalProfit || 0)}
+                  Lucro Bruto: <strong>{formatBRCurrency(kpis.totalProfit || 0)}</strong>
                 </div>
               </>
             ) : (
-              <div className="py-0.5">
-                <span className="text-xs sm:text-sm font-semibold text-slate-400 italic">Margem Não Calculada</span>
-                <p className="text-[10px] text-slate-400 mt-0.5">Requer coluna de Custos/CMV.</p>
-              </div>
+              <span className="text-xs text-slate-400 italic">Sem coluna de custo</span>
             )}
           </div>
         </div>
 
       </div>
 
-      {/* Main Charts Grid */}
+      {/* Main Standard Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
         {/* Timeline Sales Evolution Chart */}
@@ -257,26 +298,26 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             <div>
               <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-600 shrink-0" />
-                Evolução Temporal das Vendas
+                Vendas por dia (Evolução Temporal)
               </h3>
-              <p className="text-[11px] text-slate-500">Faturamento acumulado ({dateRangeText})</p>
+              <p className="text-[11px] text-slate-500">Tendência de faturamento ({dateRangeText})</p>
             </div>
             
             {/* Chart Action Buttons */}
             <div className="flex items-center space-x-1 sm:space-x-1.5 flex-wrap gap-y-1">
               <button
-                onClick={() => handleCopyChart(timelineCardRef, 'Evolução Temporal das Vendas')}
+                onClick={() => handleCopyChart(timelineCardRef, 'Vendas por dia (Evolução Temporal)')}
                 className="px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center space-x-1 transition-all"
-                title="Copiar imagem do gráfico para colar no PowerPoint"
+                title="Copiar imagem do gráfico"
               >
                 <Copy className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Copiar gráfico</span>
               </button>
 
               <button
-                onClick={() => handleDownloadChart(timelineCardRef, 'Evolução Temporal das Vendas')}
+                onClick={() => handleDownloadChart(timelineCardRef, 'Vendas por dia (Evolução Temporal)')}
                 className="px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center space-x-1 transition-all"
-                title="Baixar imagem PNG em alta resolução"
+                title="Baixar PNG"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Baixar PNG</span>
@@ -285,10 +326,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               {onOpenChartConfigurator && (
                 <button
                   onClick={() => onOpenChartConfigurator()}
-                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center space-x-1 transition-all shadow-sm"
+                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center space-x-1 transition-all shadow-xs"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar gráfico</span>
+                  <span>Editar</span>
                 </button>
               )}
             </div>
@@ -297,28 +338,22 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           {timeline.length > 0 ? (
             <div className="h-60 sm:h-72 w-full pt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#059669" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#059669" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
+                <LineChart data={timeline} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="displayDate" stroke="#64748b" fontSize={10} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={10} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={10} tickFormatter={formatAxisTickValue} tickLine={false} />
                   <Tooltip 
                     formatter={(value: any) => [formatBRCurrency(Number(value)), 'Vendas']}
                     labelFormatter={(label) => `Data: ${label}`}
                   />
-                  <Area type="monotone" dataKey="sales" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSales)" />
-                </AreaChart>
+                  <Line type="linear" dataKey="sales" name="Vendas (R$)" stroke="#059669" strokeWidth={2.5} dot={{ r: 4, fill: '#059669' }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <div className="h-56 flex flex-col items-center justify-center text-slate-400 text-xs text-center p-4">
               <AlertCircle className="w-7 h-7 mb-2 stroke-1 text-slate-400" />
-              <span>Sem coluna de data mapeada para gerar gráfico de linha do tempo.</span>
+              <span>Sem coluna de data mapeada para gerar gráfico de evolução.</span>
             </div>
           )}
         </div>
@@ -339,7 +374,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               <button
                 onClick={() => handleCopyChart(storeCardRef, 'Ranking de Lojas')}
                 className="px-2 py-1 text-[10px] font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center space-x-1 transition-all"
-                title="Copiar gráfico para área de transferência"
               >
                 <Copy className="w-3 h-3 text-emerald-600" />
                 <span>Copiar</span>
@@ -348,21 +382,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               <button
                 onClick={() => handleDownloadChart(storeCardRef, 'Ranking de Lojas')}
                 className="px-2 py-1 text-[10px] font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center space-x-1 transition-all"
-                title="Baixar PNG"
               >
                 <Download className="w-3 h-3 text-emerald-600" />
                 <span>PNG</span>
               </button>
-
-              {onOpenChartConfigurator && (
-                <button
-                  onClick={() => onOpenChartConfigurator()}
-                  className="px-2 py-1 text-[10px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center space-x-1 transition-all"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  <span>Editar</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -371,7 +394,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stores.slice(0, 7)} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis type="number" stroke="#64748b" fontSize={9} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
+                  <XAxis type="number" stroke="#64748b" fontSize={9} tickFormatter={formatAxisTickValue} />
                   <YAxis type="category" dataKey="store" stroke="#334155" fontSize={10} width={95} tick={{ fontSize: 9 }} />
                   <Tooltip formatter={(value: any) => [formatBRCurrency(Number(value)), 'Vendas']} />
                   <Bar dataKey="totalSales" radius={[0, 4, 4, 0]}>
@@ -401,7 +424,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                 <Award className="w-4 h-4 text-purple-600 shrink-0" />
                 Desempenho de Metas por Loja
               </h3>
-              <p className="text-[11px] text-slate-500">Comparativo individual entre meta cadastrada e realizado</p>
+              <p className="text-[11px] text-slate-500">Atingimento da meta mensal por filial (deduplicada por loja/período)</p>
             </div>
           </div>
 
@@ -426,7 +449,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                     </span>
                   </div>
 
-                  {/* Progress Bar */}
                   <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                     <div 
                       className={`h-2 rounded-full transition-all duration-500 ${
@@ -447,112 +469,155 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
       )}
 
-      {/* Category Breakdown & Top Products Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        
-        {/* Category Share */}
-        {categories.length > 0 && (
-          <div ref={categoryCardRef} className="executive-card p-4 sm:p-6 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2.5 gap-2">
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900">Participação por Categoria</h3>
-                <p className="text-[11px] text-slate-500">Distribuição percentual do faturamento</p>
-              </div>
+      {/* DYNAMIC CUSTOM CHARTS LIST */}
+      {customCharts.length > 0 && (
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-emerald-600" />
+              <span>Análises Personalizadas Adicionadas</span>
+            </h3>
+            <span className="text-xs text-slate-500 font-medium">
+              {customCharts.length} gráfico(s) customizado(s)
+            </span>
+          </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-1 sm:space-x-1.5 flex-wrap gap-y-1">
-                <button
-                  onClick={() => handleCopyChart(categoryCardRef, 'Participação por Categoria', '%')}
-                  className="px-2 py-1 text-[10px] font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center space-x-1 transition-all"
-                  title="Copiar gráfico para área de transferência"
-                >
-                  <Copy className="w-3 h-3 text-emerald-600" />
-                  <span>Copiar</span>
-                </button>
-
-                <button
-                  onClick={() => handleDownloadChart(categoryCardRef, 'Participação por Categoria', '%')}
-                  className="px-2 py-1 text-[10px] font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center space-x-1 transition-all"
-                  title="Baixar PNG"
-                >
-                  <Download className="w-3 h-3 text-emerald-600" />
-                  <span>PNG</span>
-                </button>
-
-                {onOpenChartConfigurator && (
-                  <button
-                    onClick={() => onOpenChartConfigurator()}
-                    className="px-2 py-1 text-[10px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center space-x-1 transition-all"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Editar</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2.5 pt-1">
-              {categories.map((cat, idx) => (
-                <div key={cat.category} className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700 gap-2">
-                    <span className="truncate">{cat.category}</span>
-                    <span className="shrink-0">{formatBRCurrency(cat.totalSales)} ({cat.sharePct.toFixed(1)}%)</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {customCharts.map((chart, idx) => (
+              <div
+                key={chart.id}
+                ref={(el) => { customChartRefs.current[chart.id] = el; }}
+                className="executive-card p-4 sm:p-6 space-y-3 border border-slate-200 hover:border-slate-300 transition-all shadow-xs"
+              >
+                {/* Header Toolbar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2.5 gap-2">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-sm sm:text-base font-bold text-slate-900">{chart.title}</h4>
+                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
+                        {chart.chartType}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Métrica: {chart.metricHeader} | Dimensão: {chart.dimensionHeader}
+                    </p>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="h-2 rounded-full" 
-                      style={{ 
-                        width: `${cat.sharePct}%`,
-                        backgroundColor: BRAND_COLORS[idx % BRAND_COLORS.length]
-                      }}
-                    ></div>
+
+                  {/* Actions Toolbar */}
+                  <div className="flex items-center space-x-1 flex-wrap gap-y-1">
+                    
+                    {/* Copy Image */}
+                    <button
+                      onClick={() => handleCopyChart(customChartRefs.current[chart.id], chart.title)}
+                      className="px-2 py-1 text-[10px] font-bold text-slate-700 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 rounded-lg flex items-center space-x-1"
+                      title="Copiar gráfico para a área de transferência"
+                    >
+                      <Copy className="w-3 h-3 text-emerald-600" />
+                      <span>Copiar</span>
+                    </button>
+
+                    {/* Download PNG */}
+                    <button
+                      onClick={() => handleDownloadChart(customChartRefs.current[chart.id], chart.title)}
+                      className="px-2 py-1 text-[10px] font-bold text-slate-700 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 rounded-lg flex items-center space-x-1"
+                      title="Baixar imagem PNG"
+                    >
+                      <Download className="w-3 h-3 text-emerald-600" />
+                      <span>PNG</span>
+                    </button>
+
+                    {/* Edit */}
+                    {onOpenChartConfigurator && (
+                      <button
+                        onClick={() => onOpenChartConfigurator(chart)}
+                        className="px-2 py-1 text-[10px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center space-x-1"
+                        title="Editar gráfico"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Editar</span>
+                      </button>
+                    )}
+
+                    {/* Duplicate */}
+                    {onDuplicateChart && (
+                      <button
+                        onClick={() => onDuplicateChart(chart)}
+                        className="p-1 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                        title="Duplicar este gráfico"
+                      >
+                        <CopyPlus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Reorder Up / Down */}
+                    {onReorderChart && (
+                      <div className="flex items-center space-x-0.5 bg-slate-100 border border-slate-200 rounded-lg p-0.5">
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => onReorderChart(chart.id, 'up')}
+                          className="p-0.5 text-slate-600 hover:text-slate-900 disabled:opacity-30"
+                          title="Mover para cima"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          disabled={idx === customCharts.length - 1}
+                          onClick={() => onReorderChart(chart.id, 'down')}
+                          className="p-0.5 text-slate-600 hover:text-slate-900 disabled:opacity-30"
+                          title="Mover para baixo"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Delete */}
+                    {onDeleteChart && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`Deseja remover o gráfico "${chart.title}" do dashboard? Os dados da planilha não serão excluídos.`)) {
+                            onDeleteChart(chart.id);
+                          }
+                        }}
+                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"
+                        title="Remover gráfico"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Top 10 Products Table */}
-        {products.length > 0 && (
-          <div className="executive-card p-4 sm:p-6 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900">Top 10 Produtos Mais Vendidos</h3>
-                <p className="text-[11px] text-slate-500">Ranking por faturamento no período</p>
+                {/* Chart Content Container */}
+                <DynamicChartRenderer
+                  config={chart}
+                  sheetData={sheetData}
+                  mapping={mapping}
+                  height={280}
+                />
+
+                {/* Footer Bar: Presentation Checkbox Toggle */}
+                {onTogglePresentationChart && (
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <label className="flex items-center space-x-2 cursor-pointer text-slate-700 hover:text-slate-900 select-none">
+                      <input
+                        type="checkbox"
+                        checked={chart.showInPresentation ?? true}
+                        onChange={() => onTogglePresentationChart(chart.id)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="font-semibold text-[11px]">Incluir esta análise na apresentação gerada</span>
+                    </label>
+
+                    <span className="text-[10px] text-slate-400 font-mono">ID: {chart.id}</span>
+                  </div>
+                )}
+
               </div>
-            </div>
-
-            <div className="custom-table-container">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Produto / Item</th>
-                    <th>Categoria</th>
-                    <th>Vendas (R$)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((p, i) => (
-                    <tr key={p.product}>
-                      <td className="font-bold text-slate-400">{i + 1}</td>
-                      <td className="font-medium text-slate-900">{p.product}</td>
-                      <td>
-                        <span className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded">
-                          {p.category}
-                        </span>
-                      </td>
-                      <td className="font-bold text-emerald-700">{formatBRCurrency(p.totalSales)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            ))}
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
 
       {/* Calculation Scope Footer */}
       <div className="p-3.5 sm:p-4 bg-slate-900 text-slate-300 rounded-xl text-[11px] sm:text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 shadow-inner">
@@ -563,7 +628,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           </span>
         </div>
         <span className="text-[10px] text-slate-400">
-          Cálculos localmente processados via JS determinístico.
+          Cálculos localmente processados via JS determinístico (pt-BR).
         </span>
       </div>
 

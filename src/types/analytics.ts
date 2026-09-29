@@ -160,7 +160,50 @@ export interface CustomCalculatedMetric {
   showInPresentation: boolean;
 }
 
-export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'scatter' | 'table' | 'stacked100';
+export type ChartType = 
+  | 'area' 
+  | 'bar' 
+  | 'horizontalBar' 
+  | 'line' 
+  | 'pie' 
+  | 'scatter' 
+  | 'table' 
+  | 'stacked100'
+  | 'bar_grouped'
+  | 'bar_stacked'
+  | 'donut'
+  | 'target_realized'
+  | 'pareto'
+  | 'heatmap'
+  | 'table_conditional';
+
+export type AnalysisQuestionId =
+  | 'evolution_sales'
+  | 'top_stores'
+  | 'store_targets'
+  | 'top_products_categories'
+  | 'category_share'
+  | 'ticket_medio_store'
+  | 'margin_by_dimension'
+  | 'revenue_vs_margin'
+  | 'pareto_sales'
+  | 'heatmap_sales';
+
+export interface AnalysisQuestionItem {
+  id: AnalysisQuestionId;
+  question: string;
+  category: 'Evolução' | 'Lojas' | 'Produtos' | 'Margem' | 'Distribuição';
+  description: string;
+  requiredFields: {
+    key: keyof ColumnMapping;
+    label: string;
+    required: boolean;
+  }[];
+  defaultChartType: ChartType;
+  defaultTitle: string;
+  defaultDimension: 'date' | 'store' | 'category' | 'product';
+  defaultMetric: 'sales' | 'target' | 'ticket' | 'margin' | 'quantity';
+}
 
 export interface CustomChartConfig {
   id: string;
@@ -192,6 +235,7 @@ export interface CustomChartConfig {
   seriesCustomNames?: Record<string, string>;
   isAutomatic?: boolean;
   autoJustification?: string;
+  displayMode?: 'absolute' | 'percentage';
 
   // Tab 3: Appearance options (Boticário identity defaults)
   paletteId?: string; // 'boticario' | 'emerald' | 'indigo' | 'rose' | 'custom'

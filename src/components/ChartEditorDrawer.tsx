@@ -351,41 +351,80 @@ export const ChartEditorDrawer: React.FC<ChartEditorDrawerProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setChartType('pie')}
+                  onClick={() => setChartType('donut')}
                   className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition-all ${
-                    chartType === 'pie' 
+                    chartType === 'donut' || chartType === 'pie' 
                       ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500' 
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <PieChart className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-xs">Rosca</span>
+                  <PieChart className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span className="text-xs">Rosca / Pizza</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setChartType('stacked100')}
+                  onClick={() => setChartType('pareto')}
                   className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition-all ${
-                    chartType === 'stacked100' 
+                    chartType === 'pareto' 
                       ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500' 
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <LayoutGrid className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-xs">Colunas 100%</span>
+                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span className="text-xs">Pareto (Curva ABC)</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setChartType('table')}
+                  onClick={() => setChartType('scatter')}
                   className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition-all ${
-                    chartType === 'table' 
+                    chartType === 'scatter' 
                       ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500' 
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <Table className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-xs">Tabela</span>
+                  <LayoutGrid className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-xs">Dispersão (X × Y)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setChartType('target_realized')}
+                  className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition-all ${
+                    chartType === 'target_realized' 
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span className="text-xs">Realizado vs Meta</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setChartType('heatmap')}
+                  className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition-all ${
+                    chartType === 'heatmap' 
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-xs">Mapa de Calor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setChartType('table_conditional')}
+                  className={`p-2.5 rounded-xl border text-left flex items-center space-x-2 transition-all ${
+                    chartType === 'table_conditional' || chartType === 'table' 
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <Table className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="text-xs">Tabela Condicional</span>
                 </button>
 
               </div>
