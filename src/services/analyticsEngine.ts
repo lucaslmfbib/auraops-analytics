@@ -9,7 +9,8 @@ import {
   StorePerformance, 
   TimepointSales,
   CustomChartConfig,
-  MetricAggregation
+  MetricAggregation,
+  AISuggestion
 } from '../types/analytics';
 import { formatBRCurrency, formatBRDate, formatBRNumber, parseBrazilianNumber, parseDateValue } from './dataParser';
 
@@ -607,4 +608,81 @@ export function calculateCustomMetricValue(
 
   return 0;
 }
+
+export function generateAISuggestionsForSlide(
+  kpis: KPICalculation,
+  stores: StorePerformance[],
+  categories: CategoryPerformance[]
+): AISuggestion[] {
+  const list: AISuggestion[] = [];
+
+  // Fatos
+  list.push({
+    id: 'f1',
+    type: 'fact',
+    text: `[Fato] Faturamento total acumulado: ${formatBRCurrency(kpis.totalSales)} (${formatBRNumber(kpis.recordCount)} registros).`
+  });
+
+  if (kpis.hasTargetData && kpis.targetAchievementPct !== null) {
+    list.push({
+      id: 'f2',
+      type: 'fact',
+      text: `[Fato] Meta consolidada da rede: ${formatBRCurrency(kpis.totalTarget)} (${kpis.targetAchievementPct.toFixed(1)}% de atingimento).`
+    });
+  }
+
+  if (stores.length > 0) {
+    const top = stores[0];
+    list.push({
+      id: 'f3',
+      type: 'fact',
+      text: `[Fato] Unidade líder de faturamento: ${top.store} (${formatBRCurrency(top.totalSales)}).`
+    });
+  }
+
+  if (categories.length > 0) {
+    const topCat = categories[0];
+    list.push({
+      id: 'f4',
+      type: 'fact',
+      text: `[Fato] Categoria com maior participação: "${topCat.category}" (${topCat.sharePct.toFixed(1)}% das vendas).`
+    });
+  }
+
+  // Hipóteses
+  if (kpis.targetAchievementPct !== null) {
+    if (kpis.targetAchievementPct < 100) {
+      list.push({
+        id: 'h1',
+        type: 'hypothesis',
+        text: `[Hipótese] O gap de ${formatBRCurrency(kpis.totalTarget - kpis.totalSales)} decorre da concentração de vendas no final de semana e oscilação nas unidades secundárias.`
+      });
+    } else {
+      list.push({
+        id: 'h2',
+        type: 'hypothesis',
+        text: `[Hipótese] A superação da meta aponta alta tração de produtos de ticket elevado e boa adesão de clientes.`
+      });
+    }
+  }
+
+  // Sugestões
+  if (stores.length > 1) {
+    const lastStore = stores[stores.length - 1];
+    list.push({
+      id: 's1',
+      type: 'suggestion',
+      text: `[Sugestão] Implementar ação promocional focada em itens de maior ticket médio na unidade ${lastStore.store}.`
+    });
+  }
+
+  list.push({
+    id: 's2',
+    type: 'suggestion',
+    text: `[Sugestão] Priorizar o abastecimento e estoque contínuo da categoria líder para mitigar rupturas.`
+  });
+
+  return list;
+}
+
 

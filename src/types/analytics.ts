@@ -215,12 +215,46 @@ export interface PPTXTheme {
 }
 
 export type SlideLayoutId = 
+  | 'capa'
+  | 'resumo_executivo'
+  | 'kpis'
+  | 'grafico_analise'
+  | 'fluxograma'
+  | 'plano_acao'
+  // Legacy aliases
   | 'cover'
   | 'executive_kpis'
-  | 'chart_and_insights'
   | 'ranking_table'
+  | 'chart_and_insights'
   | 'recommendations'
   | 'custom_content';
+
+export interface FlowchartNode {
+  id: string;
+  label: string;
+  type: 'step' | 'decision';
+}
+
+export interface FlowchartEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string; // e.g., 'Sim', 'Não', 'Aprovação'
+}
+
+export interface ActionPlanItem {
+  id: string;
+  action: string;
+  owner?: string;
+  deadline?: string;
+  kpiId?: string;
+}
+
+export interface AISuggestion {
+  id: string;
+  type: 'fact' | 'hypothesis' | 'suggestion';
+  text: string;
+}
 
 export interface SlideItemConfig {
   id: string; // slide id
@@ -232,6 +266,11 @@ export interface SlideItemConfig {
   customText?: string;
   meetingContext?: string;
   visible: boolean;
+  flowchartNodes?: FlowchartNode[];
+  flowchartEdges?: FlowchartEdge[];
+  actionPlanItems?: ActionPlanItem[];
+  chartConfig?: CustomChartConfig;
+  useDashboardFilters?: boolean;
 }
 
 export interface PresentationSnapshot {
@@ -242,3 +281,4 @@ export interface PresentationSnapshot {
   theme: PPTXTheme;
   slides: SlideItemConfig[];
 }
+
