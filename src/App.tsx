@@ -350,6 +350,8 @@ export function App() {
               onConfirmAndNavigate={() => setActiveTab('dashboard')}
               isDemoMode={isDemoMode}
               currentFileName={currentFileName}
+              kpiSelections={kpiSelections}
+              onUpdateKpiSelections={setKpiSelections}
             />
           )}
 

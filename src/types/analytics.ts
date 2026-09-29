@@ -152,7 +152,7 @@ export interface CustomCalculatedMetric {
   unit: string;
 }
 
-export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'scatter' | 'table';
+export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'scatter' | 'table' | 'stacked100';
 
 export interface CustomChartConfig {
   id: string;

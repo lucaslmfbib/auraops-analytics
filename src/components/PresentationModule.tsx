@@ -176,6 +176,7 @@ export const PresentationModule: React.FC<PresentationModuleProps> = ({
   categories,
   dateRangeText,
   activeDatasetName,
+  kpiSelections,
   customCharts = []
 }) => {
   const [activePillarTab, setActivePillarTab] = useState<'visual' | 'structure' | 'content'>('structure');
@@ -205,6 +206,7 @@ export const PresentationModule: React.FC<PresentationModuleProps> = ({
   };
 
   const handleExportPPTX = async () => {
+    if (isExporting) return;
     setIsExporting(true);
     try {
       const snapshot: PresentationSnapshot = {
@@ -217,11 +219,98 @@ export const PresentationModule: React.FC<PresentationModuleProps> = ({
       };
 
       await generatePPTXFile(snapshot, stores, categories);
-    } catch (err) {
-      alert('Erro ao gerar a apresentação em PowerPoint. Tente novamente.');
+    } catch (err: any) {
+      console.error('PPTX Export Error:', err);
+      alert(`Erro ao gerar a apresentação em PowerPoint: ${err?.message || 'Falha técnica ao construir a apresentação. Verifique o console.'}`);
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleAutoAssemble = () => {
+    const assembled: SlideItemConfig[] = [
+      {
+        id: `slide_capa_${Date.now()}`,
+        title: 'Relatório Executivo de Inteligência Operacional',
+        description: 'Apresentação de resultados mensais e direcionamento estratégico',
+        layoutId: 'capa',
+        selectedKpis: [],
+        selectedChartIds: [],
+        meetingContext: 'Apresentação de desempenho e metas da operação.',
+        visible: true
+      },
+      {
+        id: `slide_resumo_${Date.now()}`,
+        title: 'Resumo Executivo da Operação',
+        description: 'Destaques e síntese de resultados',
+        layoutId: 'resumo_executivo',
+        selectedKpis: [],
+        selectedChartIds: [],
+        customText: `• Faturamento global atingiu ${formatBRCurrency(kpis.totalSales)} no período.\n• ${kpis.storeCount} unidades de lojas ativas computadas.\n• Acompanhamento constante do atingimento de metas.`,
+        visible: true
+      }
+    ];
+
+    // KPIs Selecionados
+    const selectedKpiIds = (Object.keys(kpiSelections || {}) as KPIId[]).filter(k => kpiSelections?.[k]?.showInPresentation);
+    if (selectedKpiIds.length > 0) {
+      assembled.push({
+        id: `slide_kpis_${Date.now()}`,
+        title: 'Indicadores Chave de Desempenho (KPIs)',
+        description: 'Resumo de métricas selecionadas',
+        layoutId: 'kpis',
+        selectedKpis: selectedKpiIds,
+        selectedChartIds: [],
+        visible: true
+      });
+    }
+
+    // Um slide por gráfico configurado
+    if (customCharts && customCharts.length > 0) {
+      customCharts.forEach((chart, idx) => {
+        if (chart.showInPresentation !== false) {
+          assembled.push({
+            id: `slide_chart_${chart.id}_${Date.now()}`,
+            title: chart.title || `Gráfico ${idx + 1}`,
+            description: `Análise por ${chart.dimensionHeader}`,
+            layoutId: 'grafico_analise',
+            selectedKpis: [],
+            selectedChartIds: [chart.id],
+            customText: chart.autoJustification || `Distribuição de ${chart.metricHeader} agrupada por ${chart.dimensionHeader}.`,
+            visible: true
+          });
+        }
+      });
+    } else {
+      assembled.push({
+        id: `slide_chart_default_${Date.now()}`,
+        title: 'Gráfico e Análise de Distribuição',
+        description: 'Participação das linhas no faturamento global',
+        layoutId: 'grafico_analise',
+        selectedKpis: [],
+        selectedChartIds: [],
+        customText: 'A categoria líder representa a maior fatia do faturamento acumulado.',
+        visible: true
+      });
+    }
+
+    // Plano de Ação
+    assembled.push({
+      id: `slide_plano_${Date.now()}`,
+      title: 'Plano de Ação e Acompanhamento',
+      description: 'Ações estruturadas para alavancar os resultados',
+      layoutId: 'plano_acao',
+      selectedKpis: [],
+      selectedChartIds: [],
+      actionPlanItems: [
+        { id: 'a1', action: 'Monitorar metas diárias das lojas críticas', owner: 'Gerência Operacional', deadline: 'Semanal', kpiId: 'Meta Atingimento' },
+        { id: 'a2', action: 'Reforçar estoque das categorias líderes', owner: 'Logística', deadline: 'Segunda-feira', kpiId: 'Vendas Totais' }
+      ],
+      visible: true
+    });
+
+    setSlides(assembled);
+    setActiveSlideIndex(0);
   };
 
   const addSlide = (layoutId: SlideLayoutId = 'resumo_executivo') => {
@@ -345,12 +434,21 @@ export const PresentationModule: React.FC<PresentationModuleProps> = ({
 
           <div className="flex items-center space-x-2">
             <button
+              onClick={handleAutoAssemble}
+              className="bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2 transition-all shadow-sm"
+              title="Gera os slides automaticamente com base nos KPIs e gráficos selecionados"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Montagem Automática</span>
+            </button>
+
+            <button
               onClick={handleExportPPTX}
               disabled={isExporting}
               className="bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center space-x-2 transition-all shadow-md"
             >
               <Download className="w-4 h-4 text-emerald-300" />
-              <span>{isExporting ? 'Exportando PPTX...' : 'Baixar PowerPoint (.pptx)'}</span>
+              <span>{isExporting ? 'Gerando apresentação...' : 'Baixar PowerPoint (.pptx)'}</span>
             </button>
           </div>
         </div>

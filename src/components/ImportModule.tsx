@@ -13,7 +13,8 @@ import {
   Sliders,
   Database
 } from 'lucide-react';
-import { ColumnMapping, MetaGranularity, SheetData } from '../types/analytics';
+import { ColumnMapping, KPIId, KPISelectionState, MetaGranularity, SheetData } from '../types/analytics';
+import { KPI_REGISTRY, checkKPICalculability } from '../services/kpiRegistry';
 
 interface ImportModuleProps {
   sheetNames: string[];
@@ -27,6 +28,8 @@ interface ImportModuleProps {
   onConfirmAndNavigate: () => void;
   isDemoMode: boolean;
   currentFileName?: string;
+  kpiSelections?: Record<KPIId, KPISelectionState>;
+  onUpdateKpiSelections?: (newSelections: Record<KPIId, KPISelectionState>) => void;
 }
 
 export const ImportModule: React.FC<ImportModuleProps> = ({
@@ -40,12 +43,15 @@ export const ImportModule: React.FC<ImportModuleProps> = ({
   onLoadDemo,
   onConfirmAndNavigate,
   isDemoMode,
-  currentFileName
+  currentFileName,
+  kpiSelections,
+  onUpdateKpiSelections
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewPage, setPreviewPage] = useState(1);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [expandedKpiDetails, setExpandedKpiDetails] = useState<Record<string, boolean>>({});
   const rowsPerPage = 8;
 
   const handleDrag = (e: React.DragEvent) => {
@@ -119,13 +125,27 @@ export const ImportModule: React.FC<ImportModuleProps> = ({
             </div>
           </div>
 
-          <div className={`flex items-center space-x-3 p-2 rounded-lg border ${
-            sheetData && mapping.salesCol ? 'bg-slate-50 text-slate-800 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-200'
-          }`}>
-            <span className="w-6 h-6 rounded-full bg-slate-300 text-slate-600 font-bold flex items-center justify-center text-xs shrink-0">3</span>
+          <div 
+            onClick={() => {
+              if (sheetData && mapping.salesCol) onConfirmAndNavigate();
+            }}
+            className={`flex items-center space-x-3 p-2 rounded-lg border transition-all ${
+              sheetData && mapping.salesCol 
+                ? 'bg-emerald-50 text-emerald-900 border-emerald-300 cursor-pointer hover:bg-emerald-100 shadow-sm' 
+                : 'bg-slate-50 text-slate-400 border-slate-200'
+            }`}
+          >
+            <span className={`w-6 h-6 rounded-full font-bold flex items-center justify-center text-xs shrink-0 ${
+              sheetData && mapping.salesCol ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-600'
+            }`}>3</span>
             <div>
-              <span className="font-bold block">3. Abrir dashboard</span>
-              <span className="text-[11px] opacity-80">Visualizar indicadores</span>
+              <span className="font-bold block flex items-center gap-1">
+                <span>3. Abrir dashboard</span>
+                {sheetData && mapping.salesCol && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+              </span>
+              <span className="text-[11px] opacity-80">
+                {sheetData && mapping.salesCol ? 'Pronto para visualizar (Clique)' : 'Requer coluna de vendas'}
+              </span>
             </div>
           </div>
 
@@ -403,14 +423,146 @@ export const ImportModule: React.FC<ImportModuleProps> = ({
               </div>
             </div>
 
-            {/* Expandable Optional Fields Accordion */}
+            {/* SEÇÃO 3: Seleção de Indicadores ("Quais indicadores você quer mostrar?") */}
+            <div className="border-t border-slate-200 pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-emerald-600" />
+                    Quais indicadores você quer mostrar?
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Escolha onde exibir cada indicador calculado a partir da sua planilha.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {Object.values(KPI_REGISTRY).map(kpi => {
+                  const { isCalculable, explanation } = checkKPICalculability(kpi.id, mapping);
+                  const currentSelection = (kpiSelections && kpiSelections[kpi.id]) || { showInDashboard: true, showInPresentation: true };
+                  const isExpanded = !!expandedKpiDetails[kpi.id];
+
+                  const toggleDashboard = () => {
+                    if (!onUpdateKpiSelections || !kpiSelections) return;
+                    onUpdateKpiSelections({
+                      ...kpiSelections,
+                      [kpi.id]: {
+                        ...currentSelection,
+                        showInDashboard: !currentSelection.showInDashboard
+                      }
+                    });
+                  };
+
+                  const togglePresentation = () => {
+                    if (!onUpdateKpiSelections || !kpiSelections) return;
+                    onUpdateKpiSelections({
+                      ...kpiSelections,
+                      [kpi.id]: {
+                        ...currentSelection,
+                        showInPresentation: !currentSelection.showInPresentation
+                      }
+                    });
+                  };
+
+                  return (
+                    <div
+                      key={kpi.id}
+                      className={`p-3.5 rounded-xl border transition-all ${
+                        !isCalculable
+                          ? 'bg-slate-50/70 border-slate-200 opacity-80'
+                          : currentSelection.showInDashboard || currentSelection.showInPresentation
+                          ? 'bg-white border-emerald-300 shadow-sm'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <span className="font-bold text-xs text-slate-900">{kpi.name}</span>
+                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200">
+                              {kpi.category}
+                            </span>
+                            <span className="bg-emerald-50 text-emerald-800 text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-200">
+                              Unidade: {kpi.unit}
+                            </span>
+                          </div>
+
+                          {!isCalculable ? (
+                            <div className="flex items-center space-x-1.5 text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 mt-1">
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                              <span>{explanation}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-1 text-[11px] text-emerald-700 font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Pronto para cálculo com as colunas atuais</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center space-x-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 shrink-0 self-start md:self-auto">
+                          <label className={`flex items-center space-x-1.5 text-xs font-semibold cursor-pointer ${
+                            !isCalculable ? 'opacity-40 cursor-not-allowed' : 'text-slate-800'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              disabled={!isCalculable}
+                              checked={currentSelection.showInDashboard && isCalculable}
+                              onChange={toggleDashboard}
+                              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                            />
+                            <span>Dashboard</span>
+                          </label>
+
+                          <div className="w-px h-5 bg-slate-300"></div>
+
+                          <label className={`flex items-center space-x-1.5 text-xs font-semibold cursor-pointer ${
+                            !isCalculable ? 'opacity-40 cursor-not-allowed' : 'text-slate-800'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              disabled={!isCalculable}
+                              checked={currentSelection.showInPresentation && isCalculable}
+                              onChange={togglePresentation}
+                              className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                            />
+                            <span>Apresentação</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => setExpandedKpiDetails(prev => ({ ...prev, [kpi.id]: !prev[kpi.id] }))}
+                            className="text-[11px] font-bold text-slate-500 hover:text-slate-700 underline pl-1"
+                          >
+                            {isExpanded ? 'Ocultar detalhes' : 'Detalhes do indicador'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expandable KPI details */}
+                      {isExpanded && (
+                        <div className="mt-3 p-3 bg-slate-100/70 border border-slate-200 rounded-lg text-xs space-y-1.5 text-slate-700 animate-fade-in">
+                          <p><strong>Descrição:</strong> {kpi.description}</p>
+                          <p><strong>Fórmula oficial:</strong> <code className="bg-white px-1.5 py-0.5 rounded border text-[11px] font-mono text-slate-900">{kpi.formula}</code></p>
+                          <p><strong>Campos exigidos na planilha:</strong> {kpi.requiredRoles.join(', ')}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Expandable Optional Fields Accordion ("Aparência avançada") */}
             <div className="border-t border-slate-200 pt-4">
               <button
                 type="button"
                 onClick={() => setShowOptionalFields(!showOptionalFields)}
                 className="flex items-center justify-between w-full text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 p-3 rounded-lg border border-slate-200 transition-colors"
               >
-                <span>Campos Opcionais (Custo/CMV, Ticket Médio, Quantidades)</span>
+                <span>Aparência avançada & Mapeamento complementar (Custo, Ticket, Quantidades)</span>
                 {showOptionalFields ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
@@ -550,16 +702,50 @@ export const ImportModule: React.FC<ImportModuleProps> = ({
 
           </div>
 
-          {/* STEP 3: Navigation Button */}
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={onConfirmAndNavigate}
-              disabled={!mapping.salesCol}
-              className="bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 text-white font-bold px-6 py-3 rounded-xl shadow-md flex items-center space-x-2 text-sm transition-all"
-            >
-              <span>Confirmar e abrir dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          {/* STEP 3: Navigation Confirmation Card */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+            {!mapping.salesCol ? (
+              <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold block text-sm">O que falta para abrir o dashboard?</span>
+                  <p className="mt-1">
+                    É necessário selecionar a coluna referente a <strong>Vendas / Faturamento (R$)</strong> no formulário do passo 2.
+                    Campos adicionais como Metas, Custos e Lojas são <strong>opcionais</strong> e não bloqueiam a navegação.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-sm block">Estrutura de dados válida!</span>
+                    <p>Faturamento mapeado para a coluna <strong>"{mapping.salesCol}"</strong>. Clique abaixo para abrir o dashboard.</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onConfirmAndNavigate}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-3 rounded-xl shadow-md flex items-center space-x-2 text-sm transition-all shrink-0 w-full sm:w-auto justify-center"
+                >
+                  <span>Confirmar e abrir dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {!mapping.salesCol && (
+              <div className="flex justify-end">
+                <button
+                  disabled
+                  className="bg-slate-300 text-slate-500 font-bold px-6 py-3 rounded-xl flex items-center space-x-2 text-sm cursor-not-allowed opacity-80"
+                >
+                  <span>Confirmar e abrir dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

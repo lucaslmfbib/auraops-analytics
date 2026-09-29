@@ -4,7 +4,7 @@
   "description": "Plataforma Executiva de Análise de Dados e Inteligência Operacional para Varejo de Cosméticos",
   "main": "dist/bundle.js",
   "scripts": {
-    "build:js": "esbuild src/main.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=empty --define:process.env.NODE_ENV=\\\"production\\\"",
+    "build:js": "node ./node_modules/esbuild-wasm/bin/esbuild src/main.tsx --bundle --outfile=dist/bundle.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=empty --define:process.env.NODE_ENV=\\\"production\\\"",
     "build:css": "tailwindcss -i ./src/index.css -o ./dist/bundle.css --minify",
     "build:html": "node -e \"require('fs').copyFileSync('index.html', 'dist/index.html')\"",
     "build": "npm run build:js && npm run build:css && npm run build:html",

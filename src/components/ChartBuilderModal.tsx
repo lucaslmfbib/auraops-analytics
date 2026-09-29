@@ -375,40 +375,142 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({
               </div>
             )}
 
-            {/* Chart Type Selector */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                onClick={() => setChartType('bar')}
-                className={`p-3 rounded-xl border text-left space-y-1 ${chartType === 'bar' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <BarChart3 className="w-4 h-4 text-emerald-600" />
-                <span className="block">Colunas Verticais</span>
-              </button>
+            {/* Chart Type Selector with 6 Visual Options */}
+            <div>
+              <label className="block font-bold text-slate-800 mb-2">Tipo de Gráfico (Selecione o modelo visual)</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                
+                {/* 1. Barras Horizontais */}
+                <button
+                  type="button"
+                  onClick={() => setChartType('horizontalBar')}
+                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                    chartType === 'horizontalBar' 
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 font-bold ring-1 ring-emerald-500 shadow-sm' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                    <BarChart3 className="w-4 h-4 rotate-90" />
+                  </div>
+                  <div>
+                    <span className="block font-bold text-xs">Barras horizontais</span>
+                    <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">Comparar e ordenar categorias</span>
+                  </div>
+                </button>
 
-              <button
-                onClick={() => setChartType('horizontalBar')}
-                className={`p-3 rounded-xl border text-left space-y-1 ${chartType === 'horizontalBar' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <BarChart3 className="w-4 h-4 text-emerald-600 rotate-90" />
-                <span className="block">Barras Horizontais</span>
-              </button>
+                {/* 2. Colunas */}
+                <button
+                  type="button"
+                  onClick={() => setChartType('bar')}
+                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                    chartType === 'bar' 
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 font-bold ring-1 ring-emerald-500 shadow-sm' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block font-bold text-xs">Colunas</span>
+                    <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">Comparar categorias ou períodos</span>
+                  </div>
+                </button>
 
-              <button
-                onClick={() => setChartType('line')}
-                className={`p-3 rounded-xl border text-left space-y-1 ${chartType === 'line' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <LineChart className="w-4 h-4 text-emerald-600" />
-                <span className="block">Linha Temporal</span>
-              </button>
+                {/* 3. Linhas */}
+                <button
+                  type="button"
+                  onClick={() => setChartType('line')}
+                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                    chartType === 'line' 
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 font-bold ring-1 ring-emerald-500 shadow-sm' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                    <LineChart className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block font-bold text-xs">Linhas</span>
+                    <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">Evolução ao longo do tempo</span>
+                  </div>
+                </button>
 
-              <button
-                onClick={() => setChartType('area')}
-                className={`p-3 rounded-xl border text-left space-y-1 ${chartType === 'area' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <AreaChart className="w-4 h-4 text-emerald-600" />
-                <span className="block">Área Acumulada</span>
-              </button>
+                {/* 4. Rosca */}
+                <button
+                  type="button"
+                  onClick={() => setChartType('pie')}
+                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                    chartType === 'pie' 
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 font-bold ring-1 ring-emerald-500 shadow-sm' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                    <PieChart className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block font-bold text-xs">Rosca</span>
+                    <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">Participação das partes no total</span>
+                  </div>
+                </button>
+
+                {/* 5. Colunas empilhadas 100% */}
+                <button
+                  type="button"
+                  onClick={() => setChartType('stacked100')}
+                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                    chartType === 'stacked100' 
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 font-bold ring-1 ring-emerald-500 shadow-sm' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                    <LayoutGrid className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block font-bold text-xs">Colunas 100%</span>
+                    <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">Composição percentual</span>
+                  </div>
+                </button>
+
+                {/* 6. Tabela */}
+                <button
+                  type="button"
+                  onClick={() => setChartType('table')}
+                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                    chartType === 'table' 
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 font-bold ring-1 ring-emerald-500 shadow-sm' 
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                    <Table className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block font-bold text-xs">Tabela</span>
+                    <span className="text-[10px] text-slate-500 leading-tight block mt-0.5">Comparar valores detalhados</span>
+                  </div>
+                </button>
+
+              </div>
             </div>
+
+            {/* Validation Alerts */}
+            {chartType === 'pie' && previewData.some(d => d.value < 0) && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-[11px] flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Validação do Gráfico de Rosca: Requer apenas valores não negativos e total positivo.</span>
+              </div>
+            )}
+
+            {chartType === 'stacked100' && (
+              <div className="p-2.5 bg-sky-50 border border-sky-200 rounded-lg text-sky-800 text-[11px] flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
+                <span>Composição em 100%: Exibe a distribuição percentual das partes de um mesmo total.</span>
+              </div>
+            )}
 
             {/* Chart Configuration Controls */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -504,7 +606,7 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({
 
             {/* Category Color Lock Map */}
             <div className="border-t pt-3 space-y-2">
-              <span className="font-bold text-slate-800 block">Vínculo de Cor por Categoria (Fixado após ordenação/filtro):</span>
+              <span className="font-bold text-slate-800 block">Vínculo de Cor por Categoria:</span>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {previewData.slice(0, 6).map((item, idx) => (
                   <div key={item.label} className="p-2 rounded border bg-slate-50 flex items-center justify-between">
@@ -564,6 +666,47 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({
                     ))}
                   </Bar>
                 </BarChart>
+              ) : chartType === 'pie' ? (
+                <RePieChart>
+                  <Pie
+                    data={previewData}
+                    dataKey="value"
+                    nameKey="label"
+                    innerRadius={40}
+                    outerRadius={75}
+                    paddingAngle={3}
+                  >
+                    {previewData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color || BOTICARIO_PALETTE.colors[idx % BOTICARIO_PALETTE.colors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: any) => [formatBRCurrency(Number(v)), metricHeader]} />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
+                </RePieChart>
+              ) : chartType === 'table' ? (
+                <div className="overflow-auto max-h-48 text-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b bg-slate-100/50 text-slate-800">
+                        <th className="p-1.5 font-bold">{dimensionHeader}</th>
+                        <th className="p-1.5 font-bold text-right">{metricHeader}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewData.map((row, idx) => (
+                        <tr key={idx} className="border-b border-slate-100">
+                          <td className="p-1.5 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
+                            <span>{row.label}</span>
+                          </td>
+                          <td className="p-1.5 text-right font-mono font-bold" style={{ color: primaryColor }}>
+                            {formatBRCurrency(row.value)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <BarChart data={previewData}>
                   {showGridlines && <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />}
