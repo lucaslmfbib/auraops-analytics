@@ -142,14 +142,22 @@ export interface CustomMetricConfig {
   showInPresentation: boolean;
 }
 
+export type OperatorType = '/' | '*' | '-' | '+';
+
 export interface CustomCalculatedMetric {
   id: string;
   name: string;
-  formulaExpr: string; // e.g., "(Sales - Cost) / Sales"
-  columnA: string;
-  columnB: string;
-  operator: '-' | '/' | '*' | '+';
+  numeratorCol: string;
+  numeratorAggregation: MetricAggregation;
+  operator: OperatorType;
+  denominatorCol: string;
+  denominatorAggregation: MetricAggregation;
   unit: string;
+  numberFormat: 'currency' | 'number' | 'percent';
+  decimalPlaces: number;
+  plainFormulaText: string;
+  showInDashboard: boolean;
+  showInPresentation: boolean;
 }
 
 export type ChartType = 'area' | 'bar' | 'horizontalBar' | 'line' | 'pie' | 'scatter' | 'table' | 'stacked100';
@@ -161,8 +169,8 @@ export interface CustomChartConfig {
   dimensionHeader: string;
   metricHeader: string;
   aggregation: MetricAggregation;
-  sortOrder: 'desc' | 'asc' | 'alpha';
-  limitTopN: number; // 0 for all, or 5, 10
+  sortOrder: 'desc' | 'asc' | 'alpha' | 'chrono';
+  limitTopN: number; // 0 for all, or 5, 7, 10
   showInDashboard: boolean;
   showInPresentation: boolean;
   
@@ -170,6 +178,8 @@ export interface CustomChartConfig {
   compareWithTarget?: boolean;
   compareWithPrevious?: boolean;
   filterStateOverride?: FilterState;
+  customCalculatedMetricId?: string;
+  timeGrouping?: 'day' | 'week' | 'month' | 'quarter';
 
   // Tab 2: Chart options
   orientation?: 'vertical' | 'horizontal';
@@ -177,6 +187,8 @@ export interface CustomChartConfig {
   showAxes?: boolean;
   showGridlines?: boolean;
   showLegend?: boolean;
+  numberFormat?: 'currency' | 'number' | 'percent';
+  decimalPlaces?: number;
   seriesCustomNames?: Record<string, string>;
   isAutomatic?: boolean;
   autoJustification?: string;

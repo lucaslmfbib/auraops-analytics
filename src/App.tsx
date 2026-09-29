@@ -9,8 +9,10 @@ import { QuestionsModule } from './components/QuestionsModule';
 import { PresentationModule } from './components/PresentationModule';
 import { SettingsModule } from './components/SettingsModule';
 import { ChartBuilderModal } from './components/ChartBuilderModal';
+import { ChartEditorDrawer } from './components/ChartEditorDrawer';
 import { 
   ColumnMapping, 
+  CustomCalculatedMetric,
   CustomChartConfig, 
   FilterState, 
   KPIId, 
@@ -80,6 +82,7 @@ export function App() {
   const [showChartModal, setShowChartModal] = useState<boolean>(false);
   const [editingChartConfig, setEditingChartConfig] = useState<CustomChartConfig | null>(null);
   const [customChartsList, setCustomChartsList] = useState<CustomChartConfig[]>([]);
+  const [customCalculatedMetrics, setCustomCalculatedMetrics] = useState<CustomCalculatedMetric[]>([]);
 
   // File & Sheet state
   const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
@@ -372,10 +375,26 @@ export function App() {
           {/* Tab 3: Personalizar */}
           {activeTab === 'customization' && (
             <CustomizationPanel
+              sheetData={sheetData}
               mapping={mapping}
               kpiSelections={kpiSelections}
               onUpdateSelections={setKpiSelections}
               onCopyDashboardToPresentation={handleCopyDashboardToPresentation}
+              customCalculatedMetrics={customCalculatedMetrics}
+              onSaveCalculatedMetric={(metric) => {
+                setCustomCalculatedMetrics(prev => {
+                  const idx = prev.findIndex(m => m.id === metric.id);
+                  if (idx >= 0) {
+                    const next = [...prev];
+                    next[idx] = metric;
+                    return next;
+                  }
+                  return [...prev, metric];
+                });
+              }}
+              onDeleteCalculatedMetric={(id) => {
+                setCustomCalculatedMetrics(prev => prev.filter(m => m.id !== id));
+              }}
             />
           )}
 
@@ -414,12 +433,36 @@ export function App() {
 
       </div>
 
-      {/* CHART BUILDER MODAL */}
+      {/* CHART EDITOR DRAWER */}
       {showChartModal && (
-        <ChartBuilderModal
+        <ChartEditorDrawer
           sheetData={sheetData}
-          existingChart={editingChartConfig}
-          onSaveChart={handleSaveChartFromModal}
+          chartConfig={editingChartConfig || {
+            id: `chart_${Date.now()}`,
+            title: 'Novo Gráfico Personalizado',
+            metricHeader: sheetData?.headers[0] || 'Vendas',
+            dimensionHeader: sheetData?.headers[1] || 'Loja',
+            chartType: 'bar',
+            aggregation: 'sum',
+            sortOrder: 'desc',
+            limitTopN: 0,
+            showInDashboard: true,
+            showInPresentation: true,
+            primaryColor: '#011E38',
+            secondaryColor: '#264FEC',
+            accentColor: '#FFBC82',
+            cardBgColor: '#F5F1EB',
+            fontFamily: 'IBM Plex Sans',
+            showLegend: true,
+            showValues: true,
+            showGridlines: true,
+            numberFormat: 'currency',
+            decimalPlaces: 2
+          }}
+          onSaveChart={(chart) => {
+            handleSaveChartFromModal(chart);
+            setShowChartModal(false);
+          }}
           onClose={() => setShowChartModal(false)}
         />
       )}

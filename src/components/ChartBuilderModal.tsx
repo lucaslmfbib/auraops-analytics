@@ -78,7 +78,7 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({
   // ABA GRÁFICO State
   const [chartType, setChartType] = useState<ChartType>(existingChart?.chartType || 'bar');
   const [orientation, setOrientation] = useState<'vertical' | 'horizontal'>(existingChart?.orientation || 'vertical');
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'alpha'>(existingChart?.sortOrder || 'desc');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'alpha' | 'chrono'>(existingChart?.sortOrder || 'desc');
   const [limitTopN, setLimitTopN] = useState<number>(existingChart?.limitTopN ?? 7);
   const [showValues, setShowValues] = useState<boolean>(existingChart?.showValues ?? true);
   const [showAxes, setShowAxes] = useState<boolean>(existingChart?.showAxes ?? true);
